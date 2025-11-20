@@ -477,4 +477,3 @@ Enterprise use only. Not for public distribution.
 **Built with ❤️ for enterprise security teams**
 
 For support or questions: contact your security team
-update
