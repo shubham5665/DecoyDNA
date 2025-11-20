@@ -15,12 +15,26 @@ const Monitoring = () => {
     return () => clearInterval(interval)
   }, [])
 
+  const fetchWithRetry = async (fn, attempts = 3, delay = 300) => {
+    let lastErr = null
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn()
+      } catch (e) {
+        lastErr = e
+        await new Promise((r) => setTimeout(r, delay * (i + 1)))
+      }
+    }
+    throw lastErr
+  }
+
   const loadMonitoringStatus = async () => {
     try {
-      const res = await monitoringAPI.getStatus()
+      const res = await fetchWithRetry(() => monitoringAPI.getStatus())
       setIsMonitoring(res.data.is_running)
       setStats(res.data)
       setLoading(false)
+      setError(null)
     } catch (err) {
       setError('Failed to load monitoring status')
       setLoading(false)

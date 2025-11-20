@@ -19,9 +19,22 @@ const Alerts = () => {
     loadSettings()
   }, [])
 
+  const fetchWithRetry = async (fn, attempts = 3, delay = 300) => {
+    let lastErr = null
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn()
+      } catch (e) {
+        lastErr = e
+        await new Promise((r) => setTimeout(r, delay * (i + 1)))
+      }
+    }
+    throw lastErr
+  }
+
   const loadSettings = async () => {
     try {
-      const res = await alertAPI.getSettings()
+      const res = await fetchWithRetry(() => alertAPI.getSettings())
       setSettings(res.data)
       
       // Initialize form data
@@ -36,6 +49,7 @@ const Alerts = () => {
       })
       
       setLoading(false)
+      setError(null)
     } catch (err) {
       setError('Failed to load alert settings')
       setLoading(false)

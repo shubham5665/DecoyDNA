@@ -55,7 +55,7 @@ class AccessEventResponse(BaseModel):
     process_name: Optional[str]
     process_command: Optional[str]
     file_hash: Optional[str]
-    alert_sent: str
+    alert_sent: Optional[bool] = False
 
     class Config:
         from_attributes = True

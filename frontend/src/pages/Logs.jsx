@@ -19,14 +19,29 @@ const Logs = () => {
     loadLogs()
   }, [filters])
 
+  const fetchWithRetry = async (fn, attempts = 3, delay = 300) => {
+    let lastErr = null
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn()
+      } catch (e) {
+        lastErr = e
+        await new Promise((r) => setTimeout(r, delay * (i + 1)))
+      }
+    }
+    throw lastErr
+  }
+
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const res = await eventAPI.getLogs(
-        0,
-        200,
-        filters.decoy_id || null,
-        filters.hours
+      const res = await fetchWithRetry(() =>
+        eventAPI.getLogs(
+          0,
+          200,
+          filters.decoy_id || null,
+          filters.hours
+        )
       )
       
       let filtered = res.data
@@ -36,6 +51,7 @@ const Logs = () => {
       
       setEvents(filtered)
       setLoading(false)
+      setError(null)
     } catch (err) {
       setError('Failed to load logs')
       setLoading(false)

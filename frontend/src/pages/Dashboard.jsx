@@ -17,18 +17,35 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const statsRes = await dashboardAPI.getStats()
-        setStats(statsRes.data)
-
-        const eventsRes = await eventAPI.getLogs(0, 20)
-        setEventData(eventsRes.data)
-
-        setLoading(false)
-      } catch (err) {
-        setError('Failed to load dashboard data')
-        setLoading(false)
+      // Fetch stats and events separately with retries so one failure doesn't block the whole page
+      const fetchWithRetry = async (fn, attempts = 3, delay = 300) => {
+        let lastErr = null
+        for (let i = 0; i < attempts; i++) {
+          try {
+            return await fn()
+          } catch (e) {
+            lastErr = e
+            await new Promise((r) => setTimeout(r, delay * (i + 1)))
+          }
+        }
+        throw lastErr
       }
+
+      try {
+        const statsRes = await fetchWithRetry(() => dashboardAPI.getStats())
+        setStats(statsRes.data)
+      } catch (e) {
+        setError((prev) => (prev ? prev + '; failed to load stats' : 'Failed to load stats'))
+      }
+
+      try {
+        const eventsRes = await fetchWithRetry(() => eventAPI.getLogs(0, 20))
+        setEventData(eventsRes.data)
+      } catch (e) {
+        setError((prev) => (prev ? prev + '; failed to load events' : 'Failed to load events'))
+      }
+
+      setLoading(false)
     }
 
     loadData()
